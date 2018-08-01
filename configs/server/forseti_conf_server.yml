@@ -1,0 +1,167 @@
+global:
+
+    # Remove or comment out the email properties if you do not want Forseti to
+    # send email notifications.
+    email_recipient: vc.alex.jayaraj@lowes.com,nikunj.radhu@lowes.com
+    email_sender: administrator@sweetcarbon.com
+    sendgrid_api_key: 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
+
+##############################################################################
+
+inventory:
+
+    # Root resource to start crawling from, formatted as
+    # <resource_type>/<resource_id>, (e.g. "organizations/12345677890")
+    root_resource_id: organizations/113347725230 
+
+    # gsuite
+    domain_super_admin_email: administrator@sweetcarbon.com
+
+    api_quota:
+        # We are not using the max allowed API quota because we wanted to
+        # include some rooms for retries.
+        # Period is in seconds.
+        admin:
+          max_calls: 14
+          period: 1.0
+        appengine:
+          max_calls: 18
+          period: 1.0
+        bigquery:
+          max_calls: 160
+          period: 1.0
+        cloudbilling:
+          max_calls: 5
+          period: 1.2
+        compute:
+          max_calls: 18
+          period: 1.0
+        container:
+          max_calls: 9
+          period: 1.0
+        crm:
+          max_calls: 4
+          period: 1.2
+        iam:
+          max_calls: 18
+          period: 1.0
+        servicemanagement:
+          max_calls: 2
+          period: 1.1
+        sqladmin:
+          max_calls: 1
+          period: 1.1
+
+    # Number of days to retain inventory data: 
+    #  -1 : (default) keep all previous data forever
+    #   0 : delete all previous inventory data before running
+    retention_days: 2
+
+##############################################################################
+
+scanner:
+
+    # Output path (do not include filename).
+    # If GCS location, the format of the path should be:
+    # gs://bucket-name/path/for/output
+     output_path: gs://forseti-server-dc5321f/scanner_output
+
+    # Rules path (do not include filename).
+    # If GCS location, the format of the path should be:
+    # gs://bucket-name/path/for/rules_path
+    # if no rules_path is specified, rules are
+    # searched in /path/to/forseti_security/rules/
+     rules_path: /home/ubuntu/forseti-security/rules
+
+    # Enable the scanners as default to true when integrated for Forseti 2.0.
+
+     scanners:
+        - name: audit_logging
+          enabled: true
+        - name: bigquery
+          enabled: true
+        - name: blacklist
+          enabled: true
+        - name: bucket_acl
+          enabled: true
+        - name: cloudsql_acl
+          enabled: true
+        - name: enabled_apis
+          enabled: false
+        - name: firewall_rule
+          enabled: true
+        - name: forwarding_rule
+          enabled: false
+        - name: group
+          enabled: true
+        - name: iam_policy
+          enabled: true
+        - name: iap
+          enabled: true
+        - name: instance_network_interface
+          enabled: false
+        - name: ke_version_scanner
+          enabled: true
+        - name: service_account_key
+          enabled: true
+
+##############################################################################
+
+notifier:
+
+    # For every resource type you can set up a notification pipeline
+    # to send alerts for every violation found
+    resources:
+        - resource: iam_policy_violations
+          should_notify: true
+          notifiers:
+            # Email violations
+            - name: email_violations
+              configuration:
+                data_format: csv
+                sendgrid_api_key: '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'
+                sender: 'administrator@sweetcarbon.com'
+                # Multiple recipients can be specified as comma-separated text.
+                recipient: 'vc.alex.jayaraj@lowes.com'
+            # Upload violations to GCS.
+            - name: gcs_violations
+              configuration:
+                data_format: csv
+                # gcs_path should begin with "gs://"
+                gcs_path: 'gs://forseti-server-dc5321f/scanner_output'
+        - resource: buckets_acl_violations
+          should_notify: true
+          notifiers:
+            # Email violations
+            - name: email_violations
+              configuration:
+                data_format: csv
+                sendgrid_api_key: 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
+                sender: administrator@sweetcarbon.com
+                # Multiple recipients can be specified as comma-separated text.
+                recipient: vc.alex.jayaraj@lowes.com
+            # Upload violations to GCS.
+            - name: gcs_violations
+              configuration:
+                data_format: csv
+                # gcs_path should begin with "gs://"
+                gcs_path: 'gs://forseti-server-dc5321f/scanner_output'
+
+    violation:
+      cscc:
+        enabled:
+        # gcs_path should begin with "gs://"
+        gcs_path:
+
+    inventory:
+      gcs_summary:
+        enabled: true
+        # data_format may be one of: csv (the default) or json
+        data_format: csv
+        # gcs_path should begin with "gs://"
+        gcs_path: gs://forseti-server-dc5321f/inventory_summary
+      email_summary:
+        enabled: true
+        sendgrid_api_key: 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
+        sender: administrator@sweetcarbon.com
+        recipient: vc.alex.jayaraj@lowes.com
